@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShoppingBag, Heart, Search, Menu, MessageCircle, User } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +19,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -39,17 +41,20 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden lg:flex gap-8 items-center font-body text-sm tracking-wide">
-            <Link href="/shop?category=men" className="hover:text-terracotta transition-colors">Men&apos;s</Link>
-            <Link href="/shop?category=women" className="hover:text-terracotta transition-colors">Women&apos;s</Link>
-            <Link href="/shop?sort=newest" className="hover:text-terracotta transition-colors">New Arrivals</Link>
+            <Link href="/" className="hover:text-terracotta transition-colors">Home</Link>
+            <button onClick={() => router.push('/shop?gender=men')} className="hover:text-terracotta transition-colors">Men&apos;s</button>
+            <button onClick={() => router.push('/shop?gender=women')} className="hover:text-terracotta transition-colors">Women&apos;s</button>
+            <button onClick={() => router.push('/shop?sort=newest')} className="hover:text-terracotta transition-colors">New Arrivals</button>
           </div>
 
           <div className="flex items-center gap-3 sm:gap-5 text-kashish">
-            <Link href="/search" className="p-2 hover:text-terracotta transition-colors">
-              <Search size={20} />
+            <Link href="/search" className="flex flex-col items-center p-1 hover:text-terracotta transition-colors text-[#4A3728]">
+              <Search size={24} strokeWidth={2} />
+              <span className="text-[10px] font-body uppercase mt-0.5">Search</span>
             </Link>
-            <Link href="/wishlist" className="p-2 hover:text-terracotta transition-colors hidden sm:block">
-              <Heart size={20} />
+            <Link href="/wishlist" className="hidden sm:flex flex-col items-center p-1 hover:text-terracotta transition-colors text-[#4A3728]">
+              <Heart size={24} strokeWidth={2} />
+              <span className="text-[10px] font-body uppercase mt-0.5">Wishlist</span>
             </Link>
 
             {user ? (
@@ -76,16 +81,19 @@ export default function Navbar() {
                 <Link href="/register" className="bg-kashish text-ivory px-3 py-1.5 rounded hover:bg-terracotta transition-colors">REGISTER</Link>
               </div>
             )}
-            <Link href="/cart" className="p-2 relative hover:text-terracotta transition-colors">
-  <ShoppingBag size={20} />
-  <ClientOnly>
-    {totalItems > 0 && (
-      <span className="absolute top-1 right-1 bg-terracotta text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
-        {totalItems}
-      </span>
-    )}
-  </ClientOnly>
-</Link>
+            <Link href="/cart" className="relative flex flex-col items-center p-1 hover:text-terracotta transition-colors text-[#4A3728]">
+              <div className="relative">
+                <ShoppingBag size={24} strokeWidth={2} />
+                <ClientOnly>
+                  {totalItems > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 bg-[#C0522B] text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border border-ivory font-bold">
+                      {totalItems}
+                    </span>
+                  )}
+                </ClientOnly>
+              </div>
+              <span className="text-[10px] font-body uppercase mt-0.5">Cart</span>
+            </Link>
           </div>
         </nav>
       </header>

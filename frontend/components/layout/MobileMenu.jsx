@@ -1,8 +1,10 @@
 'use client';
 import { X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function MobileMenu({ onClose }) {
+  const router = useRouter();
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
@@ -21,10 +23,11 @@ export default function MobileMenu({ onClose }) {
         </div>
 
         <nav className="p-6 flex flex-col gap-6 font-display text-xl text-kashish flex-grow overflow-y-auto">
-          <Link href="/shop?category=mens" onClick={onClose} className="hover:text-terracotta transition-colors">Men&apos;s Collection</Link>
-          <Link href="/shop?category=womens" onClick={onClose} className="hover:text-terracotta transition-colors">Women&apos;s Collection</Link>
-          <Link href="/shop?sort=newest" onClick={onClose} className="hover:text-terracotta transition-colors">New Arrivals</Link>
-          <Link href="/shop" onClick={onClose} className="hover:text-terracotta transition-colors">Shop All</Link>
+          <Link href="/" onClick={onClose} className="hover:text-terracotta transition-colors">Home</Link>
+          <button onClick={() => { router.push('/shop?gender=men'); onClose(); }} className="text-left hover:text-terracotta transition-colors">Men&apos;s Collection</button>
+          <button onClick={() => { router.push('/shop?gender=women'); onClose(); }} className="text-left hover:text-terracotta transition-colors">Women&apos;s Collection</button>
+          <button onClick={() => { router.push('/shop?sort=newest'); onClose(); }} className="text-left hover:text-terracotta transition-colors">New Arrivals</button>
+          <button onClick={() => { router.push('/shop'); onClose(); }} className="text-left hover:text-terracotta transition-colors">Shop All</button>
           <div className="border-t border-sand/30 my-2" />
           <Link href="/wishlist" onClick={onClose} className="hover:text-terracotta transition-colors text-lg">My Wishlist</Link>
           <Link href="/profile" onClick={onClose} className="hover:text-terracotta transition-colors text-lg">My Account</Link>

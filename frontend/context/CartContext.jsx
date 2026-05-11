@@ -1,7 +1,8 @@
 'use client';
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
+import api from '@/lib/axios';
 
 const CartContext = createContext();
 
@@ -25,7 +26,14 @@ function cartReducer(state, action) {
         items: state.items.map(i => i._id === action.payload.id && i.size === action.payload.size ? { ...i, quantity: action.payload.quantity } : i)
       };
     case 'CLEAR_CART':
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('attyer_cart');
+      }
       return { items: [] };
+    case 'SET_CART': {
+      const isSame = JSON.stringify(state.items) === JSON.stringify(action.payload);
+      return isSame ? state : { items: action.payload };
+    }
     default:
       return state;
   }
@@ -33,6 +41,7 @@ function cartReducer(state, action) {
 
 export function CartProvider({ children }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [state, reactDispatch] = useReducer(cartReducer, { items: [] }, (initial) => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('attyer_cart');
@@ -43,25 +52,20 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     if (user) {
-      const userData = localStorage.getItem('attyer_user');
-      const token = userData ? JSON.parse(userData).token : null;
-      if (!token) return;
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/cart`, { headers: { Authorization: `Bearer ${token}` } })
+      api.get('/cart')
         .then(res => {
           if (res.data.data?.items) {
-            reactDispatch({ type: 'CLEAR_CART' });
-            res.data.data.items.forEach(item => {
-               reactDispatch({ type: 'ADD_ITEM', payload: {
-                _id: item.product?._id,
-                name: item.product?.name,
-                price: item.price || item.product?.discountedPrice || item.product?.price,
-                image: item.product?.images?.[0]?.url || '',
-                size: item.size,
-                quantity: item.quantity
-                }});
-            });
+            const newItems = res.data.data.items.map(item => ({
+              _id: item.product?._id,
+              name: item.product?.name,
+              price: item.price || item.product?.discountedPrice || item.product?.price,
+              image: item.product?.images?.[0]?.url || '',
+              size: item.size,
+              quantity: item.quantity
+            }));
+            reactDispatch({ type: 'SET_CART', payload: newItems });
           }
-        }).catch(err => console.error(err));
+        }).catch(err => showToast('Failed to fetch cart'));
     }
   }, [user]);
 
@@ -73,17 +77,26 @@ export function CartProvider({ children }) {
 
   const dispatch = async (action) => {
     reactDispatch(action);
-    if (user && action.type === 'ADD_ITEM') {
-      try {
-        const userData = localStorage.getItem('attyer_user');
-        const token = userData ? JSON.parse(userData).token : null;
-        if (!token) return;
-        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/cart`, {
+    if (!user) return;
+    
+    try {
+      if (action.type === 'ADD_ITEM') {
+        await api.post('/cart', {
           productId: action.payload._id,
           size: action.payload.size,
           quantity: action.payload.quantity
-        }, { headers: { Authorization: `Bearer ${token}` } });
-      } catch (err) { console.error('Failed to update cart', err); }
+        });
+      } else if (action.type === 'CLEAR_CART') {
+        await api.delete('/cart');
+      } else if (action.type === 'REMOVE_ITEM') {
+        await api.delete(`/cart/item/${action.payload.id}/${action.payload.size}`);
+      } else if (action.type === 'UPDATE_QUANTITY') {
+        await api.put(`/cart/item/${action.payload.id}/${action.payload.size}`, {
+          quantity: action.payload.quantity
+        });
+      }
+    } catch (err) {
+      showToast('Failed to update backend cart');
     }
   };
 

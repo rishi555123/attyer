@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import ProductGrid from '@/components/product/ProductGrid';
 import ProductFilters from '@/components/product/ProductFilters';
 
 export default function ShopPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({});
@@ -18,6 +19,8 @@ export default function ShopPage() {
     if (searchParams.get('category')) params.category = searchParams.get('category');
     if (searchParams.get('printType')) params.printType = searchParams.get('printType');
     if (searchParams.get('sort')) params.sort = searchParams.get('sort');
+    if (searchParams.get('minPrice')) params.minPrice = searchParams.get('minPrice');
+    if (searchParams.get('maxPrice')) params.maxPrice = searchParams.get('maxPrice');
     setActiveFilters(params);
   }, [searchParams]);
 
@@ -39,15 +42,28 @@ export default function ShopPage() {
   }, [activeFilters]);
 
   const handleFilterChange = (newFilters) => {
-    setActiveFilters(prev => ({ ...prev, ...newFilters }));
+    const updatedFilters = { ...activeFilters, ...newFilters };
+    Object.keys(updatedFilters).forEach(key => {
+      if (updatedFilters[key] === undefined || updatedFilters[key] === '') {
+        delete updatedFilters[key];
+      }
+    });
+    setActiveFilters(updatedFilters);
+    const query = new URLSearchParams(updatedFilters).toString();
+    router.push(`/shop?${query}`, { scroll: false });
   };
 
   const clearFilter = (key) => {
-    setActiveFilters(prev => {
-      const updated = { ...prev };
-      delete updated[key];
-      return updated;
-    });
+    const updated = { ...activeFilters };
+    delete updated[key];
+    setActiveFilters(updated);
+    const query = new URLSearchParams(updated).toString();
+    router.push(`/shop?${query}`, { scroll: false });
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters({});
+    router.push('/shop', { scroll: false });
   };
 
   return (
@@ -72,7 +88,7 @@ export default function ShopPage() {
               <button onClick={() => clearFilter(key)} className="ml-1 text-sand hover:text-terracotta">×</button>
             </span>
           ))}
-          <button onClick={() => setActiveFilters({})} className="text-xs text-terracotta underline">Clear all</button>
+          <button onClick={clearAllFilters} className="text-xs px-3 py-1 bg-terracotta text-white rounded hover:bg-[#8B1A1A] transition-colors ml-2">Clear Filters</button>
         </div>
       )}
 

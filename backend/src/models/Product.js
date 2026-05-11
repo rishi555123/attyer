@@ -4,7 +4,7 @@ const variantSchema = new mongoose.Schema({
   size: {
     type: String,
     required: true,
-    enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+    enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '26', '28', '30', '32', '34', '36', '38', 'Free Size']
   },
   stock: {
     type: Number,
@@ -48,7 +48,14 @@ const productSchema = new mongoose.Schema({
     min: 0,
     validate: {
       validator: function(val) {
-        return val == null || val < this.price;
+        if (val == null) return true;
+        let priceValue = this.price;
+        if (this.getUpdate) {
+          const update = this.getUpdate();
+          priceValue = update.$set?.price !== undefined ? update.$set.price : update.price;
+        }
+        if (priceValue === undefined) return true;
+        return val < priceValue;
       },
       message: 'Discounted price must be less than original price'
     }

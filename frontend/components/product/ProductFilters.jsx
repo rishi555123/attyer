@@ -99,6 +99,22 @@ export default function ProductFilters({ onFilterChange, activeFilters = {} }) {
               </div>
             </div>
 
+            {/* Price */}
+            <div>
+              <h5 className="font-label text-xs text-sand uppercase mb-2">Price Range</h5>
+              <div className="flex gap-2 items-center">
+                <input type="number" placeholder="Min ₹" 
+                  value={activeFilters.minPrice || ''}
+                  onChange={(e) => onFilterChange({ minPrice: e.target.value })}
+                  className="w-full p-2 text-xs border border-sand/30 rounded focus:border-terracotta outline-none text-kashish bg-transparent" />
+                <span className="text-sand">-</span>
+                <input type="number" placeholder="Max ₹" 
+                  value={activeFilters.maxPrice || ''}
+                  onChange={(e) => onFilterChange({ maxPrice: e.target.value })}
+                  className="w-full p-2 text-xs border border-sand/30 rounded focus:border-terracotta outline-none text-kashish bg-transparent" />
+              </div>
+            </div>
+
             {/* Sort */}
             <div>
               <h5 className="font-label text-xs text-sand uppercase mb-2">Sort By</h5>

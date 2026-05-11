@@ -37,14 +37,6 @@ export default function ProductCard({ product }) {
           <Heart size={18} className={isWishlisted ? 'fill-deepred text-deepred' : 'text-kashish'} />
         </button>
 
-        <div className={`absolute bottom-0 left-0 right-0 p-3 bg-kashish/90 backdrop-blur-sm text-ivory text-center transition-transform duration-300 ${isHovered ? 'translate-y-0' : 'translate-y-full'}`}>
-          <button 
-            onClick={() => dispatch({ type: 'ADD_ITEM', payload: { ...product, size: 'M', quantity: 1 } })}
-            className="w-full font-label tracking-widest text-xs uppercase hover:text-terracotta"
-          >
-            Quick Add
-          </button>
-        </div>
       </div>
       <div className="p-4">
         <p className="text-xs text-sand font-label uppercase tracking-widest mb-1">{product.printType || 'Heritage'}</p>

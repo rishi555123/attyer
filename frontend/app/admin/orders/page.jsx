@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
 
 const STATUSES = ['Placed', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
 
@@ -12,6 +13,7 @@ export default function AdminOrders() {
   const [updating, setUpdating] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
+  const { showToast } = useToast();
 
   const getToken = () => JSON.parse(localStorage.getItem('attyer_user') || '{}')?.token;
 
@@ -22,7 +24,7 @@ export default function AdminOrders() {
       });
       setOrders(res.data.data || []);
     } catch (err) {
-      console.error('Failed to fetch orders', err);
+      showToast('Failed to fetch orders');
     } finally {
       setLoading(false);
     }
@@ -40,9 +42,10 @@ export default function AdminOrders() {
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
       setSelectedOrder(null);
+      showToast('Order updated successfully');
       fetchOrders();
     } catch (err) {
-      alert('Failed to update order status');
+      showToast('Failed to update order status');
     } finally {
       setUpdating(false);
     }

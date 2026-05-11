@@ -1,10 +1,19 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
+
+const STATUSES = ['Placed', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
+  const [viewOrder, setViewOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  const [statusUpdate, setStatusUpdate] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const { showToast } = useToast();
 
   const fetchStats = async () => {
     try {
@@ -16,7 +25,7 @@ export default function AdminDashboard() {
       });
       setStats(res.data.data);
     } catch (err) {
-      console.error('Failed to fetch stats', err);
+      showToast('Failed to fetch dashboard stats');
       setError('Failed to load dashboard data. Please check backend connection.');
     }
   };
@@ -25,29 +34,37 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  const handleUpdateStock = async (product, size) => {
-    const newStock = window.prompt(`Enter NEW total stock amount for Size ${size}:`);
-    if (newStock === null || newStock.trim() === '' || isNaN(newStock)) return;
-    
-    const updatedVariants = product.variants.map(v => 
-      v.size === size ? { ...v, stock: Number(newStock) } : v
-    );
-
+  const handleUpdateOrderStatus = async () => {
+    if (!statusUpdate || !selectedOrder) return;
+    setUpdating(true);
     try {
       const userStr = localStorage.getItem('attyer_user');
       const token = userStr ? JSON.parse(userStr).token : null;
-      if (!token) return;
-      await axios.patch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products/${product._id}`, 
-        { variants: updatedVariants }, 
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/orders/${selectedOrder._id}/status`,
+        { status: statusUpdate, trackingNumber },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Stock updated successfully!');
-      fetchStats(); // Refresh dashboard
+      setSelectedOrder(null);
+      showToast('Order updated successfully');
+      fetchStats();
     } catch (err) {
-      console.error(err);
-      alert('Failed to update stock. Check console for details.');
+      showToast('Failed to update order status');
+    } finally {
+      setUpdating(false);
     }
   };
+
+  const statusColor = (s) => {
+    if (s === 'Delivered') return 'bg-green-100 text-green-700';
+    if (s === 'Cancelled') return 'bg-red-100 text-red-600';
+    if (s === 'Shipped') return 'bg-blue-100 text-blue-700';
+    if (s === 'Confirmed') return 'bg-purple-100 text-purple-700';
+    if (s === 'Returned') return 'bg-orange-100 text-orange-700';
+    return 'bg-amber-100 text-amber-700';
+  };
+      const userStr = localStorage.getItem('attyer_user');
+
 
   if (error) return <p className="text-red-500 p-8">{error}</p>;
   if (!stats) return <p className="text-sand p-8">Loading dashboard...</p>;
@@ -76,7 +93,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Recent Orders Table */}
         <div className="bg-white p-6 rounded border border-sand/30 shadow-sm">
           <h2 className="font-label text-lg mb-6 text-kashish">Recent Orders</h2>
@@ -88,6 +105,7 @@ export default function AdminDashboard() {
                   <th className="p-3 font-normal">Customer</th>
                   <th className="p-3 font-normal">Amount</th>
                   <th className="p-3 font-normal">Status</th>
+                  <th className="p-3 font-normal">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sand/10 text-kashish">
@@ -97,51 +115,139 @@ export default function AdminDashboard() {
                     <td className="p-3">{order.user?.name || 'Guest'}</td>
                     <td className="p-3">₹{order.totalPrice}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' : 
-                        order.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' : 
-                        'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs ${statusColor(order.orderStatus)}`}>
                         {order.orderStatus}
                       </span>
                     </td>
+                    <td className="p-3 flex gap-3">
+                      <button onClick={() => setViewOrder(order)} className="text-xs text-kashish hover:underline">View</button>
+                      <button onClick={() => { setSelectedOrder(order); setStatusUpdate(order.orderStatus); setTrackingNumber(order.trackingNumber || ''); }} className="text-xs text-terracotta hover:underline">Update</button>
+                    </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan="4" className="p-3 text-center text-sand">No recent orders</td></tr>
+                  <tr><td colSpan="5" className="p-3 text-center text-sand">No recent orders</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
+      </div>
 
-        {/* Low Stock Alerts */}
-        <div className="bg-white p-6 rounded border border-sand/30 shadow-sm">
-          <h2 className="font-label text-lg mb-6 text-terracotta flex items-center gap-2">
-            Low Stock Alerts
-          </h2>
-          <div className="space-y-4">
-            {stats.lowStockProducts?.length > 0 ? stats.lowStockProducts.map((product) => {
-              const lowVariants = product.variants?.filter(v => v.stock <= 5) || [];
-              if (lowVariants.length === 0) return null;
-              return (
-                <div key={product._id} className="p-4 border border-red-100 bg-red-50/30 rounded flex flex-col gap-2">
-                  <p className="font-medium text-kashish">{product.name}</p>
-                  {lowVariants.map(v => (
-                    <div key={v.size} className="flex justify-between items-center bg-white p-2 rounded border border-red-100/50">
-                      <p className="text-sm text-terracotta">Size {v.size}: {v.stock} left</p>
-                      <button onClick={() => handleUpdateStock(product, v.size)} className="text-xs bg-white border border-sand/30 px-3 py-1 rounded hover:bg-cream transition-colors text-kashish">
-                        Update
-                      </button>
+      {/* View Order Details Modal */}
+      {viewOrder && (
+        <div className="fixed inset-0 bg-kashish/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8">
+            <div className="flex justify-between items-center p-6 border-b border-sand/20">
+              <div>
+                <h2 className="font-display text-xl text-kashish">{viewOrder.orderNumber}</h2>
+                <p className="text-sm text-sand">{new Date(viewOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor(viewOrder.orderStatus)}`}>{viewOrder.orderStatus}</span>
+                <button onClick={() => setViewOrder(null)} className="text-sand hover:text-terracotta text-2xl">&times;</button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-cream/30 rounded-lg p-4">
+                  <p className="text-xs font-label text-sand uppercase mb-2">Customer</p>
+                  <p className="font-medium text-kashish">{viewOrder.user?.name}</p>
+                  <p className="text-sm text-sand">{viewOrder.user?.email}</p>
+                </div>
+                <div className="bg-cream/30 rounded-lg p-4">
+                  <p className="text-xs font-label text-sand uppercase mb-2">Payment</p>
+                  <p className={`font-medium ${viewOrder.paymentInfo?.status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
+                    {viewOrder.paymentInfo?.status === 'paid' ? 'Paid Online' : 'Cash on Delivery'}
+                  </p>
+                  {viewOrder.trackingNumber && <p className="text-sm text-sand mt-1">Tracking: {viewOrder.trackingNumber}</p>}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <p className="text-xs font-label text-sand uppercase mb-2">Shipping Address</p>
+                <div className="bg-cream/30 rounded-lg p-4 text-sm text-kashish leading-relaxed">
+                  <p className="font-medium">{viewOrder.shippingAddress?.name}</p>
+                  <p>{viewOrder.shippingAddress?.street}</p>
+                  <p>{viewOrder.shippingAddress?.city}, {viewOrder.shippingAddress?.state} - {viewOrder.shippingAddress?.pincode}</p>
+                  <p>{viewOrder.shippingAddress?.country}</p>
+                  <p className="mt-1">📞 {viewOrder.shippingAddress?.phone}</p>
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <p className="text-xs font-label text-sand uppercase mb-2">Items Ordered</p>
+                <div className="space-y-3">
+                  {viewOrder.orderItems?.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-cream/30 rounded-lg">
+                      {item.image && <img src={item.image} alt={item.name} className="w-12 h-16 object-cover rounded" />}
+                      <div className="flex-1">
+                        <p className="font-medium text-kashish text-sm">{item.name}</p>
+                        <p className="text-xs text-sand">Size: {item.size} | Qty: {item.quantity}</p>
+                      </div>
+                      <p className="font-medium text-kashish text-sm">₹{item.price * item.quantity}</p>
                     </div>
                   ))}
                 </div>
-              )
-            }) : (
-              <p className="text-sm text-sand text-center py-4">Inventory levels are healthy.</p>
-            )}
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="border-t border-sand/20 pt-4 space-y-2 text-sm text-kashish">
+                <div className="flex justify-between"><span>Items Total</span><span>₹{viewOrder.itemsPrice}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span>{viewOrder.shippingPrice === 0 ? 'FREE' : `₹${viewOrder.shippingPrice}`}</span></div>
+                <div className="flex justify-between text-sand text-xs"><span>CGST</span><span>₹{viewOrder.gstBreakdown?.cgst}</span></div>
+                <div className="flex justify-between text-sand text-xs"><span>SGST</span><span>₹{viewOrder.gstBreakdown?.sgst}</span></div>
+                {viewOrder.discountAmount > 0 && <div className="flex justify-between text-terracotta"><span>Discount</span><span>-₹{viewOrder.discountAmount}</span></div>}
+                <div className="flex justify-between font-bold text-base border-t border-sand/20 pt-2"><span>Total</span><span className="text-terracotta">₹{viewOrder.totalPrice}</span></div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setViewOrder(null)} className="flex-1 py-2 border border-sand text-kashish rounded hover:bg-cream text-sm">Close</button>
+                <button
+                  onClick={() => { setSelectedOrder(viewOrder); setStatusUpdate(viewOrder.orderStatus); setTrackingNumber(viewOrder.trackingNumber || ''); setViewOrder(null); }}
+                  className="flex-1 py-2 bg-kashish text-white rounded hover:bg-terracotta text-sm"
+                >
+                  Update Status
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Update Status Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-kashish/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-display text-xl text-kashish">Update Order</h2>
+              <button onClick={() => setSelectedOrder(null)} className="text-sand hover:text-terracotta text-2xl">&times;</button>
+            </div>
+            <p className="text-sm text-sand mb-1">Order Number</p>
+            <p className="font-medium text-kashish mb-4">{selectedOrder.orderNumber || selectedOrder._id}</p>
+            <div className="mb-4">
+              <label className="block text-sm font-label text-kashish mb-2">Order Status</label>
+              <select value={statusUpdate} onChange={(e) => setStatusUpdate(e.target.value)} className="w-full p-3 border border-sand/30 rounded focus:outline-terracotta">
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-label text-kashish mb-2">Tracking Number (optional)</label>
+              <input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="e.g. DTDC123456789" className="w-full p-3 border border-sand/30 rounded focus:outline-terracotta" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setSelectedOrder(null)} className="flex-1 py-2 border border-sand text-kashish rounded hover:bg-cream">Cancel</button>
+              <button onClick={handleUpdateOrderStatus} disabled={updating} className="flex-1 py-2 bg-kashish text-white rounded hover:bg-terracotta disabled:opacity-50">
+                {updating ? 'Updating...' : 'Update Order'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

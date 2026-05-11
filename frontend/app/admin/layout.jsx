@@ -8,13 +8,7 @@ export default function AdminLayout({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  if (loading || !user || user.role !== 'admin') return null;
+  if (loading || !user) return <div className="p-8">Loading...</div>;
 
   return (
     <div className="flex bg-cream min-h-screen">

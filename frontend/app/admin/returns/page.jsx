@@ -14,7 +14,7 @@ export default function AdminReturns() {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
-        const returnOrders = (res.data.data || []).filter(o => o.orderStatus === 'Returned');
+        const returnOrders = (res.data.data || []).filter(o => ['Cancelled', 'Returned'].includes(o.orderStatus));
         setReturns(returnOrders);
       } catch (err) {
         console.error('Failed to fetch returns', err);
@@ -52,11 +52,23 @@ export default function AdminReturns() {
             <div key={order._id} className="bg-white border border-sand/20 rounded-lg p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <p className="font-medium text-kashish">{order.orderNumber}</p>
-                  <p className="text-sm text-sand">{order.user?.name} — {order.user?.email}</p>
-                  <p className="text-sm text-sand">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <p className="font-medium text-kashish text-lg mb-2">Order ID: {order._id}</p>
+                  <p className="text-sm font-bold text-kashish">Customer Details:</p>
+                  <p className="text-sm text-sand">Name: {order.shippingAddress?.name || order.user?.name}</p>
+                  <p className="text-sm text-sand">Email: {order.user?.email}</p>
+                  <p className="text-sm text-sand">Phone: {order.shippingAddress?.phone || 'N/A'}</p>
+                  <p className="text-sm text-sand mt-2">Order Date: {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Return Requested</span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${order.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {order.orderStatus}
+                  </span>
+                  {order.user?.email && (
+                    <a href={`mailto:${order.user?.email}`} className="text-xs bg-kashish text-ivory px-3 py-1.5 rounded hover:bg-terracotta transition-colors">
+                      Contact Customer
+                    </a>
+                  )}
+                </div>
               </div>
 
               <div className="mb-4">

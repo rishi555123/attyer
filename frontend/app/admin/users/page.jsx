@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -17,7 +19,7 @@ export default function AdminUsers() {
         });
         setUsers(res.data.data);
       } catch (err) {
-        console.error('Failed to fetch users', err);
+        showToast('Failed to fetch users');
       } finally {
         setLoading(false);
       }

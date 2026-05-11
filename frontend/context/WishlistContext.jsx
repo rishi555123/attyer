@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import axios from 'axios';
 
 const WishlistContext = createContext();
@@ -8,6 +9,7 @@ const WishlistContext = createContext();
 export function WishlistProvider({ children }) {
   const [wishlist, setWishlist] = useState([]);
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -16,7 +18,7 @@ export function WishlistProvider({ children }) {
       if (!token) return;
       axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/wishlist`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setWishlist(res.data.data.products.map(p => p._id || p)))
-        .catch(err => console.error(err));
+        .catch(err => showToast('Failed to load wishlist'));
     } else {
       const saved = localStorage.getItem('attyer_wishlist');
       if (saved) setWishlist(JSON.parse(saved));
@@ -40,7 +42,7 @@ export function WishlistProvider({ children }) {
         if (!token) return;
         await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/wishlist/${productId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       } catch (err) {
-        console.error('Failed to update wishlist', err);
+        showToast('Failed to update wishlist');
       }
     }
   };

@@ -14,7 +14,7 @@ exports.getProductReviews = async (req, res, next) => {
 // POST /api/reviews/:productId
 exports.createReview = async (req, res, next) => {
   try {
-    const { rating, title, comment } = req.body;
+    const { rating, title, comment, images } = req.body;
     const productId = req.params.productId;
 
     // Check if user has already reviewed
@@ -33,6 +33,7 @@ exports.createReview = async (req, res, next) => {
       rating,
       title,
       comment,
+      images,
       isVerifiedPurchase
     });
 

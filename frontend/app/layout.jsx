@@ -24,11 +24,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${dmSans.variable} ${cinzel.variable} font-body bg-cream text-kashish min-h-screen flex flex-col`}>
-        <AuthProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <RecentlyViewedProvider>
-                <ToastProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <RecentlyViewedProvider>
                   <Navbar />
                   <main className="flex-grow">
                     {children}
@@ -36,11 +36,11 @@ export default function RootLayout({ children }) {
                   <Footer />
                   <CookieConsent />
                   <Analytics />
-                </ToastProvider>
-              </RecentlyViewedProvider>
-            </WishlistProvider>
-          </CartProvider>
-        </AuthProvider>
+                </RecentlyViewedProvider>
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

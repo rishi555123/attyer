@@ -6,14 +6,17 @@ const csv = require('csv-parser');
 // GET /api/products
 exports.getAllProducts = async (req, res, next) => {
   try {
-    const { keyword, category, minPrice, maxPrice, size, sort, page = 1, limit = 12 } = req.query;
+    const { keyword, search, category, gender, printType, minPrice, maxPrice, size, sort, page = 1, limit = 12 } = req.query;
     
     let query = { isActive: true };
 
-    if (keyword) {
-      query.$text = { $search: keyword };
+    const searchTerm = search || keyword;
+    if (searchTerm) {
+      query.$text = { $search: searchTerm };
     }
     if (category) query.category = category;
+    if (gender) query.gender = gender;
+    if (printType) query.printType = printType;
     if (size) query['variants.size'] = size;
     
     if (minPrice || maxPrice) {
@@ -26,7 +29,7 @@ exports.getAllProducts = async (req, res, next) => {
     if (sort === 'price_asc') sortOption = { price: 1 };
     else if (sort === 'price_desc') sortOption = { price: -1 };
     else if (sort === 'newest') sortOption = { createdAt: -1 };
-    else if (keyword) sortOption = { score: { $meta: 'textScore' } };
+    else if (sort === 'rating') sortOption = { ratings: -1 };
 
     const skip = (Number(page) - 1) * Number(limit);
 

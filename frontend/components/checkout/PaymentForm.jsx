@@ -2,8 +2,10 @@
 import Script from 'next/script';
 import { useState } from 'react';
 import axios from 'axios';
+import { useCart } from '@/context/CartContext';
 
 export default function PaymentForm({ orderData, onSuccess }) {
+  const { dispatch } = useCart();
   const [loading, setLoading] = useState(false);
   const [method, setMethod] = useState('cod'); // 'cod' or 'razorpay'
 
@@ -41,6 +43,7 @@ export default function PaymentForm({ orderData, onSuccess }) {
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature,
           });
+          dispatch({ type: 'CLEAR_CART' });
         },
         prefill: {
           name: orderData.shippingAddress?.name || '',
