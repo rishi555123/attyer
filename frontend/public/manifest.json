@@ -1,0 +1,21 @@
+{
+  "name": "ATTYER - Authentic Indian Cotton Wear",
+  "short_name": "ATTYER",
+  "description": "Heritage meets modern silhouettes with 100% authentic Indian cotton block-prints.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5EFE0",
+  "theme_color": "#C0522B",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
